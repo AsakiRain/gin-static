@@ -6,6 +6,7 @@
 [![GoDoc](https://godoc.org/github.com/gin-contrib/static?status.svg)](https://godoc.org/github.com/gin-contrib/static)
 
 Static middleware
+> Notice: this repository is migrated from [https://github.com/vomnes/static](https://github.com/vomnes/static) since related pull request hasn't been accepted for a long time and the original repository has greatly changed. Thanks to vomnes's work.
 
 ## Usage
 
@@ -51,5 +52,33 @@ func main() {
   if err := r.Run(":8080"); err != nil {
     log.Fatal(err)
   }
+}
+```
+
+#### Serve embed folder
+[embedmd]:# (example/embed/example.go)
+```go
+package main
+import (
+	"embed"
+	"fmt"
+	"net/http"
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
+)
+//go:embed data
+var server embed.FS
+func main() {
+	r := gin.Default()
+	r.Use(static.Serve("/", static.EmbedFolder(server, "data/server")))
+	r.GET("/ping", func(c *gin.Context) {
+		c.String(200, "test")
+	})
+	r.NoRoute(func(c *gin.Context) {
+		fmt.Printf("%s doesn't exists, redirect on /\n", c.Request.URL.Path)
+		c.Redirect(http.StatusMovedPermanently, "/")
+	})
+	// Listen and Server in 0.0.0.0:8080
+	r.Run(":8080")
 }
 ```

@@ -1,6 +1,9 @@
 package static
 
 import (
+	"embed"
+	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -20,6 +23,10 @@ type localFileSystem struct {
 	http.FileSystem
 	root    string
 	indexes bool
+}
+
+type embedFileSystem struct {
+	http.FileSystem
 }
 
 func LocalFile(root string, indexes bool) *localFileSystem {
@@ -49,6 +56,21 @@ func (l *localFileSystem) Exists(prefix string, filepath string) bool {
 		return true
 	}
 	return false
+}
+
+func EmbedFolder(fsEmbed embed.FS, targetPath string) ServeFileSystem {
+	fsys, err := fs.Sub(fsEmbed, targetPath)
+	if err != nil {
+		log.Fatalf("static.EmbedFolder - Invalid targetPath value - %s", err)
+	}
+	return embedFileSystem{
+		FileSystem: http.FS(fsys),
+	}
+}
+
+func (e embedFileSystem) Exists(prefix string, path string) bool {
+	_, err := e.Open(path)
+	return err == nil
 }
 
 func ServeRoot(urlPrefix, root string) gin.HandlerFunc {
